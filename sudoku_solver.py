@@ -21,6 +21,7 @@ grid = copy.deepcopy(starting_grid)
 def print_sudoku_grid():
     for line in grid:
         print(line)
+    print("")
 
 
 def possible(x, y, n):
@@ -35,3 +36,21 @@ def possible(x, y, n):
             if grid[y0 + i][x0 + j] == n:
                 return False
     return True
+
+
+def solve_grid():
+    """Solves the sudoku grid recursively"""
+    global grid
+    for x in range(0, 9):
+        for y in range(0, 9):
+            if grid[y][x] == 0:
+                for n in range(1, 10):
+                    if possible(x, y, n):  # If it is possible to place n at (x, y)
+                        grid[y][x] = n  # we assume it is correct
+                        solve_grid()  # and call solve_grid again on the new grid.
+                        grid[y][x] = 0  # If the assumption was incorrect we backtrack and reset the value to 0
+                return
+    print_sudoku_grid()
+
+
+solve_grid()
