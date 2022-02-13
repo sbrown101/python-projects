@@ -10,7 +10,6 @@ def validate_letters(word, letters):
         return True
     for letter in letters:
         if letter not in word:
-
             return False
         else:
             return True
