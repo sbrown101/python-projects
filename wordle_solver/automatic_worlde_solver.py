@@ -1,3 +1,5 @@
+import platform
+import webbrowser
 import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -12,18 +14,13 @@ from pyshadow.main import Shadow
 
 from word_list import WordList
 
+from winreg import HKEY_CURRENT_USER, OpenKey, QueryValueEx
+
 
 class AutomaticGame:
     def __init__(self):
-        profile_path = r'C:/Users/Gazebo/AppData/Roaming/Mozilla/Firefox/Profiles/yx0i74ol.default'
-        options = Options()
-        options.set_preference('profile', profile_path)
-        service = Service(r'C:/Program Files (x86)/GeckoDriver/geckodriver.exe')
-
-        self.driver = webdriver.Firefox(service=service, options=options)
-        self.shadow = Shadow(self.driver)
-        self.driver.get('https://www.nytimes.com/games/wordle/index.html')
-        self.driver.maximize_window()
+        self.driver = None
+        self.shadow = None
 
         self.word_list = WordList()
         self.current_word = None
@@ -32,6 +29,8 @@ class AutomaticGame:
 
     def start_new_auto_game(self):
         running = True
+        self.determine_system_properties()
+        self.open_browser()
         self.close_popups()
         self.keyboard = self.shadow.find_element('div#keyboard')
         self.board = self.shadow.find_element('game-theme-manager div#game div#board-container div#board')
@@ -41,6 +40,28 @@ class AutomaticGame:
             self.type_current_word_guess()
             self.analyse_board()
             pass
+
+    def determine_system_properties(self):
+        operating_system = platform.system()
+        if operating_system == 'Windows':
+            reg_path = r'Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice'
+            with OpenKey(HKEY_CURRENT_USER, reg_path) as key:
+                browser = QueryValueEx(key, 'ProgId')
+        elif operating_system == 'Darwin':
+            browser = webbrowser.get().name
+        else:
+            print(f"Operating system {operating_system} not recognised")
+            exit(1)
+
+    def open_browser(self):
+        options = Options()
+        options.set_preference('profile', 'profile')
+        service = Service(r'./drivers/geckodriver.exe')
+
+        self.driver = webdriver.Firefox(service=service, options=options)
+        self.shadow = Shadow(self.driver)
+        self.driver.get('https://www.nytimes.com/games/wordle/index.html')
+        self.driver.maximize_window()
 
     def close_popups(self):
         self.reject_cookies()
@@ -80,7 +101,7 @@ class AutomaticGame:
             if letter not in ignored_letters and tile[1].get_attribute('evaluation') == 'absent':
                 solved = False
                 self.word_list.remove_words_with_letter(letter)
-            if tile[1].get_attribute('evaluation') == 'present':
+            elif tile[1].get_attribute('evaluation') == 'present':
                 solved = False
                 ignored_letters += letter
                 self.word_list.remove_words_without_letter(letter)
